@@ -5,8 +5,13 @@ import { ChangeEventHandler, useRef, useState } from 'react';
 import { Recommend, getSick } from '../api';
 
 type Cache = {
-  [key: string]: Recommend[];
+  [key: string]: {
+    data: Recommend[];
+    time: number;
+  };
 };
+
+const EXPIRE_TIME = 5;
 
 const Home = () => {
   const [value, setValue] = useState('');
@@ -14,24 +19,36 @@ const Home = () => {
   const cache = useRef<Cache>({});
 
   const fetchRecommendsOrGetCachedRecommends = async (val: string) => {
-    try {
-      if (val === '') return;
+    let result: Recommend[] = [];
+    const cached = cache.current[val];
+    const currentTime = new Date().getTime();
 
-      if (cache.current[val] !== undefined) {
-        setRecommends(cache.current[val]);
-      } else {
-        const result = await getSick({ key: val });
-        cache.current[val] = result;
-        setRecommends(result);
+    if (cached !== undefined && currentTime - cached.time < EXPIRE_TIME * 1000) {
+      result = cached.data;
+    } else {
+      try {
+        const data = await getSick({ key: val });
+        cache.current[val] = {
+          data,
+          time: currentTime,
+        };
+        result = data;
+      } catch (err) {
+        console.error(err);
       }
-    } catch (err) {
-      console.error(err);
     }
+
+    return result;
   };
 
   const handleValue: ChangeEventHandler<HTMLInputElement> = async (e) => {
-    setValue(e.target.value);
-    await fetchRecommendsOrGetCachedRecommends(e.target.value);
+    const val = e.target.value;
+    setValue(val);
+
+    if (val) {
+      const result = await fetchRecommendsOrGetCachedRecommends(val);
+      setRecommends(result);
+    }
   };
 
   return (
