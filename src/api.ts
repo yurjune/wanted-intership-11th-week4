@@ -15,7 +15,7 @@ export type Recommend = {
 };
 type getSickResponse = Recommend[];
 
-export const getSick = ({ key }: getSickRequest): Promise<getSickResponse> => {
+export const getSick = async ({ key }: getSickRequest): Promise<getSickResponse> => {
   console.info('calling api');
   return client.get(`/sick?q=${key}`).then(responseBody);
 };

@@ -52,6 +52,9 @@ const Home = () => {
   }, [recommends, currentIdx, open]);
 
   const getRecommends = async (word: string) => {
+    let result: Recommend[] = [];
+    if (!word) return result;
+
     const EXPIRE_TIME = 5;
     const cached = cache.current[word];
     const currentTime = new Date().getTime();
@@ -89,10 +92,7 @@ const Home = () => {
     const word = e.target.value;
     setValue(word);
     setCurrentIdx(-1);
-
-    if (word) {
-      debouncedGetRecommends(word);
-    }
+    debouncedGetRecommends(word);
   };
 
   const handleFocus = () => {
