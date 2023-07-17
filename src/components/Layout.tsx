@@ -8,8 +8,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
 
 const container = css`
   width: 100vw;
-  height: 100vh;
-  background-color: #cae9ff;
+  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: center;

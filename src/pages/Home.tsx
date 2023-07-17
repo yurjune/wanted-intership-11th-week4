@@ -81,7 +81,6 @@ const Home = () => {
 
 const container = css`
   width: 50vw;
-  height: 70vh;
   display: flex;
   flex-direction: column;
   align-items: center;
