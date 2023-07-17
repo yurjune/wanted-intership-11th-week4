@@ -1,9 +1,10 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
-import { Input, InputRef, List } from 'antd';
+import { Button, Input, InputRef, List, Space } from 'antd';
 import { ChangeEventHandler, useCallback, useEffect, useRef, useState } from 'react';
 import { Recommend, getSick } from '../api';
 import { debounce } from '../utils';
+import { SearchOutlined } from '@ant-design/icons';
 
 export type Cache = {
   [key: string]: {
@@ -59,8 +60,6 @@ const Home = () => {
     const cached = cache.current[word];
     const currentTime = new Date().getTime();
 
-    let result: Recommend[] = [];
-
     if (cached !== undefined && currentTime - cached.time < EXPIRE_TIME * 1000) {
       result = cached.data;
     } else {
@@ -111,24 +110,40 @@ const Home = () => {
         <br />
         온라인으로 참여하기
       </h1>
-      <Input
-        size='large'
-        value={value}
-        onChange={handleValue}
-        ref={inputRef}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-      />
+      <Space.Compact style={{ width: '100%' }} size='large'>
+        <Input
+          value={value}
+          onChange={handleValue}
+          ref={inputRef}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
+        />
+        <Button type='primary'>검색</Button>
+      </Space.Compact>
       {open && (
         <List
           css={listContainer}
           bordered
+          split={false}
           dataSource={recommends}
+          header={
+            value ? (
+              <div css={header}>
+                <div>
+                  <SearchOutlined css={searchIcon} />
+                  {value}
+                </div>
+                <div css={search}>추천 검색어</div>
+              </div>
+            ) : null
+          }
           renderItem={(item, idx) => (
             <List.Item
+              css={listItem}
               style={{ backgroundColor: idx === currentIdx ? 'rgb(244, 246, 250)' : 'white' }}
               onMouseDown={() => setValue(recommends[idx].sickNm)}
             >
+              <SearchOutlined css={searchIcon} />
               {item.sickNm}
             </List.Item>
           )}
@@ -148,13 +163,33 @@ const container = css`
 const h1 = css`
   text-align: center;
   line-height: 4rem;
-  font-size: 2.5rem;
+  font-size: 2rem;
 `;
 
 const listContainer = css`
   width: 100%;
   background-color: white;
   margin-top: 1rem;
+  border-radius: 0;
+`;
+
+const header = css`
+  margin-bottom: -12px;
+`;
+
+const search = css`
+  font-size: 12px;
+  color: gray;
+  margin-top: 16px;
+`;
+
+const listItem = css`
+  cursor: pointer;
+`;
+
+const searchIcon = css`
+  color: gray;
+  margin-right: 8px;
 `;
 
 export default Home;
