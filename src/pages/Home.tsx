@@ -1,8 +1,25 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
-import { Select } from 'antd';
+import { Input, List } from 'antd';
+import { ChangeEventHandler, useState } from 'react';
+import { Recommend, getSick } from '../api';
 
 const Home = () => {
+  const [value, setValue] = useState('');
+  const [recommends, setRecommends] = useState<Recommend[]>([]);
+
+  const handleValue: ChangeEventHandler<HTMLInputElement> = async (e) => {
+    setValue(e.target.value);
+    try {
+      if (e.target.value) {
+        const result = await getSick({ key: e.target.value });
+        setRecommends(result);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
   return (
     <div css={container}>
       <h1 css={h1}>
@@ -10,7 +27,15 @@ const Home = () => {
         <br />
         온라인으로 참여하기
       </h1>
-      <Select css={select} size='large' showSearch />
+      <Input size='large' value={value} onChange={handleValue} />
+      {value.length >= 1 && (
+        <List
+          css={listContainer}
+          bordered
+          dataSource={recommends.slice(0, 10)}
+          renderItem={(item) => <List.Item>{item.sickNm}</List.Item>}
+        />
+      )}
     </div>
   );
 };
@@ -29,8 +54,10 @@ const h1 = css`
   font-size: 2.5rem;
 `;
 
-const select = css`
+const listContainer = css`
   width: 100%;
+  background-color: white;
+  margin-top: 1rem;
 `;
 
 export default Home;
