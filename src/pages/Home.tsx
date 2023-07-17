@@ -1,23 +1,37 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
 import { Input, List } from 'antd';
-import { ChangeEventHandler, useState } from 'react';
+import { ChangeEventHandler, useRef, useState } from 'react';
 import { Recommend, getSick } from '../api';
+
+type Cache = {
+  [key: string]: Recommend[];
+};
 
 const Home = () => {
   const [value, setValue] = useState('');
   const [recommends, setRecommends] = useState<Recommend[]>([]);
+  const cache = useRef<Cache>({});
 
-  const handleValue: ChangeEventHandler<HTMLInputElement> = async (e) => {
-    setValue(e.target.value);
+  const fetchRecommendsOrGetCachedRecommends = async (val: string) => {
     try {
-      if (e.target.value) {
-        const result = await getSick({ key: e.target.value });
+      if (val === '') return;
+
+      if (cache.current[val] !== undefined) {
+        setRecommends(cache.current[val]);
+      } else {
+        const result = await getSick({ key: val });
+        cache.current[val] = result;
         setRecommends(result);
       }
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handleValue: ChangeEventHandler<HTMLInputElement> = async (e) => {
+    setValue(e.target.value);
+    await fetchRecommendsOrGetCachedRecommends(e.target.value);
   };
 
   return (
