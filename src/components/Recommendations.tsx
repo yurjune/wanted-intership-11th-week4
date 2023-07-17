@@ -2,7 +2,7 @@
 import { SearchOutlined } from '@ant-design/icons';
 import { css } from '@emotion/react';
 import { List } from 'antd';
-import { Recommend } from '../api';
+import { Recommend } from '../shared/api';
 
 interface RecommendationsProps {
   value: string;

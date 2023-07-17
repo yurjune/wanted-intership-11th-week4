@@ -2,9 +2,10 @@
 import { css } from '@emotion/react';
 import { InputRef } from 'antd';
 import { ChangeEventHandler, useCallback, useEffect, useRef, useState } from 'react';
-import { Recommend, getSick } from '../api';
+import { getSick } from '../shared/api';
 import { Header, Recommendations, Search } from '../components';
-import { debounce } from '../utils';
+import { debounce } from '../shared/utils';
+import { Recommend } from '../shared/model';
 
 export type Cache = {
   [key: string]: {

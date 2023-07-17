@@ -1,5 +1,6 @@
 import type { AxiosResponse } from 'axios';
 import axios from 'axios';
+import type { Recommend } from './model';
 
 const client = axios.create({
   baseURL: 'http://localhost:4000',
@@ -8,10 +9,6 @@ const responseBody = (response: AxiosResponse) => response.data;
 
 type getSickRequest = {
   key: string;
-};
-export type Recommend = {
-  sickCd: string;
-  sickNm: string;
 };
 type getSickResponse = Recommend[];
 
