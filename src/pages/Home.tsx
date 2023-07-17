@@ -1,26 +1,21 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
 import { InputRef } from 'antd';
-import { ChangeEventHandler, useCallback, useEffect, useRef, useState } from 'react';
-import { getSick } from '../shared/api';
+import { ChangeEventHandler, useEffect, useRef, useState } from 'react';
 import { Header, Recommendations, Search } from '../components';
-import { debounce } from '../shared/utils';
-import { Recommend } from '../shared/model';
-
-export type Cache = {
-  [key: string]: {
-    data: Recommend[];
-    time: number;
-  };
-};
+import { useRecommend } from '../shared/hooks';
 
 const Home = () => {
   const [value, setValue] = useState('');
-  const [recommends, setRecommends] = useState<Recommend[]>([]);
   const [currentIdx, setCurrentIdx] = useState(-1);
   const [open, setOpen] = useState(false);
-  const cache = useRef<Cache>({});
   const inputRef = useRef<InputRef>(null);
+
+  const [recommends, getRecommends] = useRecommend({
+    expireTime: 5,
+    sliceCount: 10,
+    onSuccess: () => setOpen(true),
+  });
 
   useEffect(() => {
     const input = inputRef.current?.input;
@@ -53,46 +48,11 @@ const Home = () => {
     };
   }, [recommends, currentIdx, open]);
 
-  const getRecommends = async (word: string): Promise<Recommend[]> => {
-    const EXPIRE_TIME = 5;
-    const cached = cache.current[word];
-    const currentTime = new Date().getTime();
-
-    if (!word) {
-      return [];
-    }
-    if (cached !== undefined && currentTime - cached.time < EXPIRE_TIME * 1000) {
-      return cached.data;
-    }
-
-    try {
-      const data = await getSick({ key: word });
-      cache.current[word] = {
-        data,
-        time: currentTime,
-      };
-      return data;
-    } catch (err) {
-      console.error(err);
-    }
-
-    return [];
-  };
-
-  const debouncedGetRecommends = useCallback(
-    debounce<[word: string]>(async (word) => {
-      const result = await getRecommends(word);
-      setRecommends(result.slice(0, 10));
-      handleFocus();
-    }),
-    [],
-  );
-
   const handleChange: ChangeEventHandler<HTMLInputElement> = async (e) => {
     const word = e.target.value;
     setValue(word);
     setCurrentIdx(-1);
-    debouncedGetRecommends(word);
+    getRecommends(word);
   };
 
   const handleFocus = () => {
