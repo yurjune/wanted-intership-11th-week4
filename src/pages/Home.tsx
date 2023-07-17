@@ -1,7 +1,7 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
-import { Input, List } from 'antd';
-import { ChangeEventHandler, useCallback, useRef, useState } from 'react';
+import { Input, InputRef, List } from 'antd';
+import { ChangeEventHandler, useCallback, useEffect, useRef, useState } from 'react';
 import { Recommend, getSick } from '../api';
 import { debounce } from '../utils';
 
@@ -15,7 +15,41 @@ export type Cache = {
 const Home = () => {
   const [value, setValue] = useState('');
   const [recommends, setRecommends] = useState<Recommend[]>([]);
+  const [currentIdx, setCurrentIdx] = useState(-1);
+  const [open, setOpen] = useState(false);
   const cache = useRef<Cache>({});
+  const inputRef = useRef<InputRef>(null);
+
+  useEffect(() => {
+    const input = inputRef.current?.input;
+    if (input == null) return;
+
+    const endIdx = recommends.length - 1;
+    const handleEvent = (event: KeyboardEvent) => {
+      if (!open) return;
+
+      switch (event.key) {
+        case 'ArrowDown':
+          setCurrentIdx((prev) => (prev === endIdx ? 0 : prev + 1));
+          break;
+        case 'ArrowUp':
+          setCurrentIdx((prev) => (prev === 0 || prev === -1 ? endIdx : prev - 1));
+          break;
+        case 'Enter':
+          if (currentIdx !== -1) {
+            setValue(recommends[currentIdx].sickNm);
+            handleBlur();
+          }
+          break;
+      }
+    };
+
+    input.addEventListener('keydown', handleEvent);
+
+    return () => {
+      input.removeEventListener('keydown', handleEvent);
+    };
+  }, [recommends, currentIdx, open]);
 
   const getRecommends = async (word: string) => {
     const EXPIRE_TIME = 5;
@@ -45,7 +79,8 @@ const Home = () => {
   const debouncedGetRecommends = useCallback(
     debounce<[word: string]>(async (word) => {
       const result = await getRecommends(word);
-      setRecommends(result);
+      setRecommends(result.slice(0, 10));
+      handleFocus();
     }),
     [],
   );
@@ -53,10 +88,20 @@ const Home = () => {
   const handleValue: ChangeEventHandler<HTMLInputElement> = async (e) => {
     const word = e.target.value;
     setValue(word);
+    setCurrentIdx(-1);
 
     if (word) {
       debouncedGetRecommends(word);
     }
+  };
+
+  const handleFocus = () => {
+    setOpen(true);
+  };
+
+  const handleBlur = () => {
+    setCurrentIdx(-1);
+    setOpen(false);
   };
 
   return (
@@ -66,13 +111,27 @@ const Home = () => {
         <br />
         온라인으로 참여하기
       </h1>
-      <Input size='large' value={value} onChange={handleValue} />
-      {value.length >= 1 && (
+      <Input
+        size='large'
+        value={value}
+        onChange={handleValue}
+        ref={inputRef}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      />
+      {open && (
         <List
           css={listContainer}
           bordered
-          dataSource={recommends.slice(0, 10)}
-          renderItem={(item) => <List.Item>{item.sickNm}</List.Item>}
+          dataSource={recommends}
+          renderItem={(item, idx) => (
+            <List.Item
+              style={{ backgroundColor: idx === currentIdx ? 'rgb(244, 246, 250)' : 'white' }}
+              onMouseDown={() => setValue(recommends[idx].sickNm)}
+            >
+              {item.sickNm}
+            </List.Item>
+          )}
         />
       )}
     </div>
