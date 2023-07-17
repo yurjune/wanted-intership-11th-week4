@@ -1,10 +1,10 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
-import { Button, Input, InputRef, List, Space } from 'antd';
+import { InputRef } from 'antd';
 import { ChangeEventHandler, useCallback, useEffect, useRef, useState } from 'react';
 import { Recommend, getSick } from '../api';
+import { Header, Recommendations, Search } from '../components';
 import { debounce } from '../utils';
-import { SearchOutlined } from '@ant-design/icons';
 
 export type Cache = {
   [key: string]: {
@@ -87,7 +87,7 @@ const Home = () => {
     [],
   );
 
-  const handleValue: ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const handleChange: ChangeEventHandler<HTMLInputElement> = async (e) => {
     const word = e.target.value;
     setValue(word);
     setCurrentIdx(-1);
@@ -103,50 +103,26 @@ const Home = () => {
     setOpen(false);
   };
 
+  const handleItemClick = (word: string) => () => {
+    setValue(word);
+  };
+
   return (
     <div css={container}>
-      <h1 css={h1}>
-        국내 모든 임상시험 검색하고
-        <br />
-        온라인으로 참여하기
-      </h1>
-      <Space.Compact style={{ width: '100%' }} size='large'>
-        <Input
-          value={value}
-          onChange={handleValue}
-          ref={inputRef}
-          onFocus={handleFocus}
-          onBlur={handleBlur}
-        />
-        <Button type='primary'>검색</Button>
-      </Space.Compact>
+      <Header />
+      <Search
+        ref={inputRef}
+        value={value}
+        onChange={handleChange}
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+      />
       {open && (
-        <List
-          css={listContainer}
-          bordered
-          split={false}
-          dataSource={recommends}
-          header={
-            value ? (
-              <div css={header}>
-                <div>
-                  <SearchOutlined css={searchIcon} />
-                  {value}
-                </div>
-                <div css={search}>추천 검색어</div>
-              </div>
-            ) : null
-          }
-          renderItem={(item, idx) => (
-            <List.Item
-              css={listItem}
-              style={{ backgroundColor: idx === currentIdx ? 'rgb(244, 246, 250)' : 'white' }}
-              onMouseDown={() => setValue(recommends[idx].sickNm)}
-            >
-              <SearchOutlined css={searchIcon} />
-              {item.sickNm}
-            </List.Item>
-          )}
+        <Recommendations
+          value={value}
+          recommends={recommends}
+          handleClick={handleItemClick}
+          currentIdx={currentIdx}
         />
       )}
     </div>
@@ -158,38 +134,6 @@ const container = css`
   display: flex;
   flex-direction: column;
   align-items: center;
-`;
-
-const h1 = css`
-  text-align: center;
-  line-height: 4rem;
-  font-size: 2rem;
-`;
-
-const listContainer = css`
-  width: 100%;
-  background-color: white;
-  margin-top: 1rem;
-  border-radius: 0;
-`;
-
-const header = css`
-  margin-bottom: -12px;
-`;
-
-const search = css`
-  font-size: 12px;
-  color: gray;
-  margin-top: 16px;
-`;
-
-const listItem = css`
-  cursor: pointer;
-`;
-
-const searchIcon = css`
-  color: gray;
-  margin-right: 8px;
 `;
 
 export default Home;
