@@ -1,34 +1,35 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
 import { Input, List } from 'antd';
-import { ChangeEventHandler, useRef, useState } from 'react';
+import { ChangeEventHandler, useCallback, useRef, useState } from 'react';
 import { Recommend, getSick } from '../api';
+import { debounce } from '../utils';
 
-type Cache = {
+export type Cache = {
   [key: string]: {
     data: Recommend[];
     time: number;
   };
 };
 
-const EXPIRE_TIME = 5;
-
 const Home = () => {
   const [value, setValue] = useState('');
   const [recommends, setRecommends] = useState<Recommend[]>([]);
   const cache = useRef<Cache>({});
 
-  const fetchRecommendsOrGetCachedRecommends = async (val: string) => {
-    let result: Recommend[] = [];
-    const cached = cache.current[val];
+  const getRecommends = async (word: string) => {
+    const EXPIRE_TIME = 5;
+    const cached = cache.current[word];
     const currentTime = new Date().getTime();
+
+    let result: Recommend[] = [];
 
     if (cached !== undefined && currentTime - cached.time < EXPIRE_TIME * 1000) {
       result = cached.data;
     } else {
       try {
-        const data = await getSick({ key: val });
-        cache.current[val] = {
+        const data = await getSick({ key: word });
+        cache.current[word] = {
           data,
           time: currentTime,
         };
@@ -41,13 +42,20 @@ const Home = () => {
     return result;
   };
 
-  const handleValue: ChangeEventHandler<HTMLInputElement> = async (e) => {
-    const val = e.target.value;
-    setValue(val);
-
-    if (val) {
-      const result = await fetchRecommendsOrGetCachedRecommends(val);
+  const debouncedGetRecommends = useCallback(
+    debounce<[word: string]>(async (word) => {
+      const result = await getRecommends(word);
       setRecommends(result);
+    }),
+    [],
+  );
+
+  const handleValue: ChangeEventHandler<HTMLInputElement> = async (e) => {
+    const word = e.target.value;
+    setValue(word);
+
+    if (word) {
+      debouncedGetRecommends(word);
     }
   };
 
