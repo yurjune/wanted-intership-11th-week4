@@ -52,30 +52,30 @@ const Home = () => {
     };
   }, [recommends, currentIdx, open]);
 
-  const getRecommends = async (word: string) => {
-    let result: Recommend[] = [];
-    if (!word) return result;
-
+  const getRecommends = async (word: string): Promise<Recommend[]> => {
     const EXPIRE_TIME = 5;
     const cached = cache.current[word];
     const currentTime = new Date().getTime();
 
+    if (!word) {
+      return [];
+    }
     if (cached !== undefined && currentTime - cached.time < EXPIRE_TIME * 1000) {
-      result = cached.data;
-    } else {
-      try {
-        const data = await getSick({ key: word });
-        cache.current[word] = {
-          data,
-          time: currentTime,
-        };
-        result = data;
-      } catch (err) {
-        console.error(err);
-      }
+      return cached.data;
     }
 
-    return result;
+    try {
+      const data = await getSick({ key: word });
+      cache.current[word] = {
+        data,
+        time: currentTime,
+      };
+      return data;
+    } catch (err) {
+      console.error(err);
+    }
+
+    return [];
   };
 
   const debouncedGetRecommends = useCallback(
