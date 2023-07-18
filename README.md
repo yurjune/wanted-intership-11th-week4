@@ -31,23 +31,26 @@ npm start
 4. 그렇지 않으면 데이터를 fetching 하고, 현재 시간과 가져온 데이터를 검색어 key 로 캐싱
 
 ```Typescript
-const Home = () => {
-  // description 1)
+// useRecommend.ts
+export const useRecommend = (props: useRecommendProps) => {
+  // omit...
+
+  // description 1
   const cache = useRef<Cache>({});
 
   const getRecommends = async (word: string): Promise<Recommend[]> => {
-    const EXPIRE_TIME = 5;
     const cached = cache.current[word];
     const currentTime = new Date().getTime();
 
     if (!word) return [];
-    // description 2, 3)
-    if (cached !== undefined && currentTime - cached.time < EXPIRE_TIME * 1000) {
+
+    // description 2, 3
+    if (cached !== undefined && currentTime - cached.time < expireTime * 1000) {
       return cached.data;
     }
 
-    // description 4)
     try {
+      // description 4
       const data = await getSick({ key: word });
       cache.current[word] = {
         data,
@@ -60,12 +63,15 @@ const Home = () => {
 
     return [];
   };
-}
+
+  // omit...
+};
 ```
 
 ### 2. API 호출 횟수 줄이기 - Debounce
 
-1. 디바운스를 이용하여 입력 이벤트를 그룹화하고, 마지막 입력으로부터 timeout(0.5초) 이 경과하면 마지막 입력값에 대한 api 호출만 수행
+1. 디바운스를 이용하여 입력 이벤트를 그룹화하고, 마지막 입력으로부터 timeout(0.5초) 이 경과하면 마지막 입력값에 대한 api 호출만 수행<br>
+
 2. 디바운스 함수를 만들어 데이터를 페칭할 콜백함수를 전달하고 타이머에 등록.<br/>
    만일 새 이벤트가 발생했을 때 timeout 이 경과하지 않으면 타이머를 없애고 새로운 타이머를 할당
 
@@ -85,12 +91,12 @@ export function debounce<Params extends any[]>(
 ```
 
 ```Typescript
-// pages/Home.tsx
-const debouncedGetRecommends = useCallback(
+// useRecommend.ts
+const debouncedUpdateRecommends = useCallback(
   debounce<[word: string]>(async (word) => {
     const result = await getRecommends(word);
-    setRecommends(result.slice(0, 10));
-    handleFocus();
+    setRecommends(result.slice(0, sliceCount));
+    onSuccess();
   }),
   [],
 );
@@ -98,43 +104,76 @@ const debouncedGetRecommends = useCallback(
 
 ### 3. 키보드만으로 추천 검색어 이동
 
-1. input element 를 ref 변수에 할당
-2. useEffect 에서 input element 에 keyboardEvent 를 등록하여 ArrowDown, ArrowUp 이벤트가 발생하면 추천 검색어 리스트의 인덱스를 변경
+1. keydown 이벤트에 대한 이벤트 핸들러를 생성:
+
+- ArrowDown, ArrowUp 이벤트가 발생하면 추천 검색어 리스트의 현재 선택된 아이템의 인덱스를 변경
+- Enter 이벤트가 발생하면 onSelect 콜백함수를 실행
+
+2. 이벤트 핸들러를 domElement 에 부착
 
 ```Typescript
-  // description 1)
-  const inputRef = useRef<InputRef>(null);
+// useSelectCurrentItem.ts
+const [currentItemIdx, setCurrentItemIdx] = useState(-1);
 
-  useEffect(() => {
-    const input = inputRef.current?.input;
-    if (input == null) return;
+useEffect(() => {
+  if (domElement == null) return;
 
-    const endIdx = recommends.length - 1;
+  const endIdx = totalLength - 1;
 
-    // description 2)
-    const handleEvent = (event: KeyboardEvent) => {
-      if (!open) return;
+  // description 1
+  const handleKeyDown = (event: KeyboardEvent) => {
+    switch (event.key) {
+      case 'ArrowDown':
+        setCurrentItemIdx((prev) => (prev === endIdx ? 0 : prev + 1));
+        break;
+      case 'ArrowUp':
+        setCurrentItemIdx((prev) => (prev === 0 || prev === -1 ? endIdx : prev - 1));
+        break;
+      case 'Enter':
+        if (currentItemIdx !== -1) {
+          onSelect(currentItemIdx);
+        }
+        break;
+    }
+  };
 
-      switch (event.key) {
-        case 'ArrowDown':
-          setCurrentIdx((prev) => (prev === endIdx ? 0 : prev + 1));
-          break;
-        case 'ArrowUp':
-          setCurrentIdx((prev) => (prev === 0 || prev === -1 ? endIdx : prev - 1));
-          break;
-        case 'Enter':
-          if (currentIdx !== -1) {
-            setValue(recommends[currentIdx].sickNm);
-            handleBlur();
-          }
-          break;
-      }
-    };
+  // description 2
+  domElement.addEventListener('keydown', handleKeyDown);
+  return () => domElement.removeEventListener('keydown', handleKeyDown);
+}, [totalLength, currentItemIdx, onSelect, domElement]);
+```
 
-    input.addEventListener('keydown', handleEvent);
+## 기타 구현 사항
 
-    return () => {
-      input.removeEventListener('keydown', handleEvent);
-    };
-  }, [recommends, currentIdx, open]);
+### 1. 추천 검색어에 대한 관심사 분리<br>
+
+- useRecommend custom hook 을 생성하여 추천 검색어 리스트에 대한 상태 관리
+- 데이터 캐싱과 추천 검색어 api 요청에 대한 로직 관리
+- 사용처로부터 캐시 만료 주기, 렌더링할 추천 검색어의 최대 개수, 데이터 페칭 성공 시 실행할 onSuccess 콜백 함수를 사용처로부터 주입받아 컨트롤
+
+```Typescript
+// Home.tsx
+const [recommends, debouncedUpdateRecommends] = useRecommend({
+  expireTime: 5,
+  sliceCount: 10,
+  onSuccess: () => setRecommendationOpen(true),
+});
+```
+
+### 2. 추천 검색어 방향키 선택에 대한 관심사 분리
+
+- useSelectCurrentItem custom hook 을 생성하여 방향키 입력에 대한 동작 관리<br>
+  useEffect 에서 dom 요소에 keydown 이벤트에 이벤트 핸들러 부착
+- 사용처로부터 dom 요소, 목록 최대 길이, 아이템 선택 시 실행할 onSelect 콜백함수를 주입받아 컨트롤
+
+```Typescript
+// Home.tsx
+const [currentItemIdx, resetCurrentItemIdx] = useSelectCurrentItem({
+  domElement: inputRef.current?.input,
+  totalLength: recommends.length,
+  onSelect: (idx: number) => {
+    setInputValue(recommends[idx].sickNm);
+    handleInputBlur();
+  },
+});
 ```
