@@ -1,13 +1,12 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
 import { InputRef } from 'antd';
-import { ChangeEventHandler, useEffect, useRef, useState } from 'react';
+import { ChangeEventHandler, useRef, useState } from 'react';
 import { Header, Recommendation, Search } from '../components';
-import { useRecommend } from '../shared/hooks';
+import { useRecommend, useSelectCurrentItem } from '../shared/hooks';
 
 const Home = () => {
   const [inputValue, setInputValue] = useState('');
-  const [currentItemIdx, setCurrentItemIdx] = useState(-1);
   const [isRecommendationOpen, setRecommendationOpen] = useState(false);
   const inputRef = useRef<InputRef>(null);
 
@@ -17,46 +16,29 @@ const Home = () => {
     onSuccess: () => setRecommendationOpen(true),
   });
 
-  useEffect(() => {
-    const inputEl = inputRef.current?.input;
-    if (inputEl == null) return;
-
-    const endIdx = recommends.length - 1;
-    const handleKeydown = (event: KeyboardEvent) => {
-      switch (event.key) {
-        case 'ArrowDown':
-          setCurrentItemIdx((prev) => (prev === endIdx ? 0 : prev + 1));
-          break;
-        case 'ArrowUp':
-          setCurrentItemIdx((prev) => (prev === 0 || prev === -1 ? endIdx : prev - 1));
-          break;
-        case 'Enter':
-          if (currentItemIdx !== -1) {
-            setInputValue(recommends[currentItemIdx].sickNm);
-            handleInputBlur();
-          }
-          break;
-      }
-    };
-
-    inputEl.addEventListener('keydown', handleKeydown);
-    return () => inputEl.removeEventListener('keydown', handleKeydown);
-  }, [recommends, currentItemIdx]);
+  const [currentItemIdx, resetCurrentItemIdx] = useSelectCurrentItem({
+    domElement: inputRef.current?.input,
+    totalLength: recommends.length,
+    onSelect: (idx: number) => {
+      setInputValue(recommends[idx].sickNm);
+      handleInputBlur();
+    },
+  });
 
   const handleInputChange: ChangeEventHandler<HTMLInputElement> = async (e) => {
     const word = e.target.value;
     setInputValue(word);
-    setCurrentItemIdx(-1);
+    resetCurrentItemIdx();
     debouncedUpdateRecommends(word);
+  };
+
+  const handleInputBlur = () => {
+    resetCurrentItemIdx();
+    setRecommendationOpen(false);
   };
 
   const handleInputFocus = () => {
     setRecommendationOpen(true);
-  };
-
-  const handleInputBlur = () => {
-    setCurrentItemIdx(-1);
-    setRecommendationOpen(false);
   };
 
   const handleItemClick = (word: string) => () => {
