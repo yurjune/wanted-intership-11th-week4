@@ -104,43 +104,41 @@ const debouncedUpdateRecommends = useCallback(
 
 ### 3. 키보드만으로 추천 검색어 이동
 
-1. keydown 이벤트에 대한 이벤트 핸들러를 생성:
+1. 현재 선택된 아이템의 인덱스에 대한 상태 관리
+2. keydown 이벤트에 대한 이벤트 핸들러를 생성
 
 - ArrowDown, ArrowUp 이벤트가 발생하면 추천 검색어 리스트의 현재 선택된 아이템의 인덱스를 변경
-- Enter 이벤트가 발생하면 onSelect 콜백함수를 실행
-
-2. 이벤트 핸들러를 domElement 에 부착
+- Enter 이벤트가 발생하면 onEnter 콜백함수를 실행
 
 ```Typescript
-// useSelectCurrentItem.ts
-const [currentItemIdx, setCurrentItemIdx] = useState(-1);
-
-useEffect(() => {
-  if (domElement == null) return;
-
-  const endIdx = totalLength - 1;
-
+// useKeydown.ts
+export const useKeydown = ({ totalLength, onEnter }: useKeydownProps) => {
   // description 1
-  const handleKeyDown = (event: KeyboardEvent) => {
-    switch (event.key) {
-      case 'ArrowDown':
-        setCurrentItemIdx((prev) => (prev === endIdx ? 0 : prev + 1));
-        break;
-      case 'ArrowUp':
-        setCurrentItemIdx((prev) => (prev === 0 || prev === -1 ? endIdx : prev - 1));
-        break;
-      case 'Enter':
-        if (currentItemIdx !== -1) {
-          onSelect(currentItemIdx);
-        }
-        break;
-    }
-  };
+  const [currentItemIdx, setCurrentItemIdx] = useState(-1);
 
   // description 2
-  domElement.addEventListener('keydown', handleKeyDown);
-  return () => domElement.removeEventListener('keydown', handleKeyDown);
-}, [totalLength, currentItemIdx, onSelect, domElement]);
+  const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = useCallback(
+    (event) => {
+      switch (event.key) {
+        case 'ArrowDown':
+          setCurrentItemIdx((prev) => (prev === endIdx ? 0 : prev + 1));
+          break;
+        case 'ArrowUp':
+          setCurrentItemIdx((prev) => (prev === 0 || prev === -1 ? endIdx : prev - 1));
+          break;
+        case 'Enter':
+          if (currentItemIdx !== -1) {
+            onEnter(currentItemIdx);
+          }
+          break;
+      }
+    },
+    [currentItemIdx, endIdx, onEnter],
+  );
+
+  // omit...
+  return [currentItemIdx, resetCurrentItemIdx, handleKeyDown] as const;
+};
 ```
 
 ## 기타 구현 사항
@@ -162,16 +160,14 @@ const [recommends, debouncedUpdateRecommends] = useRecommend({
 
 ### 2. 추천 검색어 방향키 선택에 대한 관심사 분리
 
-- useSelectCurrentItem custom hook 을 생성하여 방향키 입력에 대한 동작 관리<br>
-  useEffect 에서 dom 요소에 keydown 이벤트에 이벤트 핸들러 부착
-- 사용처로부터 dom 요소, 목록 최대 길이, 아이템 선택 시 실행할 onSelect 콜백함수를 주입받아 컨트롤
+- useKeydown custom hook 을 생성하여 방향키 입력에 대한 동작 로직 관리<br>
+- 사용처로부터 목록 최대 길이, 아이템 선택 시 실행할 onEnter 콜백함수를 주입받아 컨트롤
 
 ```Typescript
 // Home.tsx
-const [currentItemIdx, resetCurrentItemIdx] = useSelectCurrentItem({
-  domElement: inputRef.current?.input,
+const [currentItemIdx, resetCurrentItemIdx, handleKeyDown] = useKeydown({
   totalLength: recommends.length,
-  onSelect: (idx: number) => {
+  onEnter: (idx: number) => {
     setInputValue(recommends[idx].sickNm);
     handleInputBlur();
   },
