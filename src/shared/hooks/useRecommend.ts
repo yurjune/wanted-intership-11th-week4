@@ -44,6 +44,7 @@ export const useRecommend = (props: useRecommendProps) => {
     return [];
   };
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const debouncedUpdateRecommends = useCallback(
     debounce<[word: string]>(async (word) => {
       const result = await getRecommends(word);
