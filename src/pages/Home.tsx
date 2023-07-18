@@ -22,9 +22,7 @@ const Home = () => {
     if (inputEl == null) return;
 
     const endIdx = recommends.length - 1;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!isRecommendationOpen) return;
-
+    const handleKeydown = (event: KeyboardEvent) => {
       switch (event.key) {
         case 'ArrowDown':
           setCurrentItemIdx((prev) => (prev === endIdx ? 0 : prev + 1));
@@ -41,9 +39,9 @@ const Home = () => {
       }
     };
 
-    inputEl.addEventListener('keydown', handleKeyDown);
-    return () => inputEl.removeEventListener('keydown', handleKeyDown);
-  }, [recommends, currentItemIdx, isRecommendationOpen]);
+    inputEl.addEventListener('keydown', handleKeydown);
+    return () => inputEl.removeEventListener('keydown', handleKeydown);
+  }, [recommends, currentItemIdx]);
 
   const handleInputChange: ChangeEventHandler<HTMLInputElement> = async (e) => {
     const word = e.target.value;
