@@ -69,6 +69,8 @@ const Home = () => {
 
 const container = css`
   width: 50vw;
+  margin-top: 5rem;
+  margin-bottom: 2rem;
   display: flex;
   flex-direction: column;
   align-items: center;

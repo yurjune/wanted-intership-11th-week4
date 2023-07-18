@@ -13,6 +13,6 @@ export const Header = () => {
 
 const header = css`
   text-align: center;
-  line-height: 4rem;
   font-size: 2rem;
+  line-height: 1.6;
 `;
