@@ -4,15 +4,15 @@ import { css } from '@emotion/react';
 import { List } from 'antd';
 import { Recommend } from '../shared/model';
 
-interface RecommendationsProps {
-  value: string;
+interface RecommendationProps {
+  searchWord: string;
   recommends: Recommend[];
+  currentItemIdx: number;
   handleClick: (word: string) => () => void;
-  currentIdx: number;
 }
 
-export const Recommendations = (props: RecommendationsProps) => {
-  const { value, recommends, handleClick, currentIdx } = props;
+export const Recommendation = (props: RecommendationProps) => {
+  const { searchWord, recommends, handleClick, currentItemIdx } = props;
 
   return (
     <List
@@ -21,11 +21,11 @@ export const Recommendations = (props: RecommendationsProps) => {
       split={false}
       dataSource={recommends}
       header={
-        value ? (
+        searchWord ? (
           <div css={header}>
             <div>
               <SearchOutlined css={searchIcon} />
-              {value}
+              {searchWord}
             </div>
             <div css={search}>추천 검색어</div>
           </div>
@@ -34,7 +34,7 @@ export const Recommendations = (props: RecommendationsProps) => {
       renderItem={(item, idx) => (
         <List.Item
           css={listItem}
-          style={{ backgroundColor: idx === currentIdx ? 'rgb(244, 246, 250)' : 'white' }}
+          style={{ backgroundColor: idx === currentItemIdx ? 'rgb(244, 246, 250)' : 'white' }}
           onMouseDown={handleClick(recommends[idx].sickNm)}
         >
           <SearchOutlined css={searchIcon} />

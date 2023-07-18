@@ -44,7 +44,7 @@ export const useRecommend = (props: useRecommendProps) => {
     return [];
   };
 
-  const debouncedGetRecommends = useCallback(
+  const debouncedUpdateRecommends = useCallback(
     debounce<[word: string]>(async (word) => {
       const result = await getRecommends(word);
       setRecommends(result.slice(0, sliceCount));
@@ -53,5 +53,5 @@ export const useRecommend = (props: useRecommendProps) => {
     [],
   );
 
-  return [recommends, debouncedGetRecommends] as const;
+  return [recommends, debouncedUpdateRecommends] as const;
 };

@@ -2,70 +2,67 @@
 import { css } from '@emotion/react';
 import { InputRef } from 'antd';
 import { ChangeEventHandler, useEffect, useRef, useState } from 'react';
-import { Header, Recommendations, Search } from '../components';
+import { Header, Recommendation, Search } from '../components';
 import { useRecommend } from '../shared/hooks';
 
 const Home = () => {
-  const [value, setValue] = useState('');
-  const [currentIdx, setCurrentIdx] = useState(-1);
-  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState('');
+  const [currentItemIdx, setCurrentItemIdx] = useState(-1);
+  const [isRecommendationOpen, setRecommendationOpen] = useState(false);
   const inputRef = useRef<InputRef>(null);
 
-  const [recommends, getRecommends] = useRecommend({
+  const [recommends, debouncedUpdateRecommends] = useRecommend({
     expireTime: 5,
     sliceCount: 10,
-    onSuccess: () => setOpen(true),
+    onSuccess: () => setRecommendationOpen(true),
   });
 
   useEffect(() => {
-    const input = inputRef.current?.input;
-    if (input == null) return;
+    const inputEl = inputRef.current?.input;
+    if (inputEl == null) return;
 
     const endIdx = recommends.length - 1;
-    const handleEvent = (event: KeyboardEvent) => {
-      if (!open) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (!isRecommendationOpen) return;
 
       switch (event.key) {
         case 'ArrowDown':
-          setCurrentIdx((prev) => (prev === endIdx ? 0 : prev + 1));
+          setCurrentItemIdx((prev) => (prev === endIdx ? 0 : prev + 1));
           break;
         case 'ArrowUp':
-          setCurrentIdx((prev) => (prev === 0 || prev === -1 ? endIdx : prev - 1));
+          setCurrentItemIdx((prev) => (prev === 0 || prev === -1 ? endIdx : prev - 1));
           break;
         case 'Enter':
-          if (currentIdx !== -1) {
-            setValue(recommends[currentIdx].sickNm);
-            handleBlur();
+          if (currentItemIdx !== -1) {
+            setInputValue(recommends[currentItemIdx].sickNm);
+            handleInputBlur();
           }
           break;
       }
     };
 
-    input.addEventListener('keydown', handleEvent);
+    inputEl.addEventListener('keydown', handleKeyDown);
+    return () => inputEl.removeEventListener('keydown', handleKeyDown);
+  }, [recommends, currentItemIdx, isRecommendationOpen]);
 
-    return () => {
-      input.removeEventListener('keydown', handleEvent);
-    };
-  }, [recommends, currentIdx, open]);
-
-  const handleChange: ChangeEventHandler<HTMLInputElement> = async (e) => {
+  const handleInputChange: ChangeEventHandler<HTMLInputElement> = async (e) => {
     const word = e.target.value;
-    setValue(word);
-    setCurrentIdx(-1);
-    getRecommends(word);
+    setInputValue(word);
+    setCurrentItemIdx(-1);
+    debouncedUpdateRecommends(word);
   };
 
-  const handleFocus = () => {
-    setOpen(true);
+  const handleInputFocus = () => {
+    setRecommendationOpen(true);
   };
 
-  const handleBlur = () => {
-    setCurrentIdx(-1);
-    setOpen(false);
+  const handleInputBlur = () => {
+    setCurrentItemIdx(-1);
+    setRecommendationOpen(false);
   };
 
   const handleItemClick = (word: string) => () => {
-    setValue(word);
+    setInputValue(word);
   };
 
   return (
@@ -73,17 +70,17 @@ const Home = () => {
       <Header />
       <Search
         ref={inputRef}
-        value={value}
-        onChange={handleChange}
-        onFocus={handleFocus}
-        onBlur={handleBlur}
+        value={inputValue}
+        onChange={handleInputChange}
+        onFocus={handleInputFocus}
+        onBlur={handleInputBlur}
       />
-      {open && (
-        <Recommendations
-          value={value}
+      {isRecommendationOpen && (
+        <Recommendation
+          searchWord={inputValue}
           recommends={recommends}
           handleClick={handleItemClick}
-          currentIdx={currentIdx}
+          currentItemIdx={currentItemIdx}
         />
       )}
     </div>
