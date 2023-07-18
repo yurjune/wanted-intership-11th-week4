@@ -1,14 +1,12 @@
 /** @jsxImportSource @emotion/react */
 import { css } from '@emotion/react';
-import { InputRef } from 'antd';
-import { ChangeEventHandler, useRef, useState } from 'react';
+import { ChangeEventHandler, useState } from 'react';
 import { Header, Recommendation, Search } from '../components';
-import { useRecommend, useSelectCurrentItem } from '../shared/hooks';
+import { useKeydown, useRecommend } from '../shared/hooks';
 
 const Home = () => {
   const [inputValue, setInputValue] = useState('');
   const [isRecommendationOpen, setRecommendationOpen] = useState(false);
-  const inputRef = useRef<InputRef>(null);
 
   const [recommends, debouncedUpdateRecommends] = useRecommend({
     expireTime: 5,
@@ -16,10 +14,9 @@ const Home = () => {
     onSuccess: () => setRecommendationOpen(true),
   });
 
-  const [currentItemIdx, resetCurrentItemIdx] = useSelectCurrentItem({
-    domElement: inputRef.current?.input,
+  const [currentItemIdx, resetCurrentItemIdx, handleKeyDown] = useKeydown({
     totalLength: recommends.length,
-    onSelect: (idx: number) => {
+    onEnter: (idx: number) => {
       setInputValue(recommends[idx].sickNm);
       handleInputBlur();
     },
@@ -49,11 +46,11 @@ const Home = () => {
     <div css={container}>
       <Header />
       <Search
-        ref={inputRef}
         value={inputValue}
         onChange={handleInputChange}
         onFocus={handleInputFocus}
         onBlur={handleInputBlur}
+        onKeyDown={handleKeyDown}
       />
       {isRecommendationOpen && (
         <Recommendation
