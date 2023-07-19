@@ -1,4 +1,8 @@
-## 실행 방법
+## 배포 링크
+
+https://spectacular-platypus-1e8ebb.netlify.app/
+
+## 로컬 실행 방법
 
 ```
 git clone https://github.com/yurjune/wanted-intership-11th-week4.git
